@@ -941,20 +941,17 @@ elif MacOS():
     TBB_URL = "https://github.com/oneapi-src/oneTBB/archive/refs/tags/2019_U6.zip"
     TBB_INTEL_URL = "https://github.com/oneapi-src/oneTBB/archive/refs/tags/2018_U1.zip"
 else:
-    TBB_URL = "https://github.com/oneapi-src/oneTBB/archive/refs/tags/2019_U6.zip"
-
-# Note: this refers to a fork of tbb for wasm. Is this maintained?
-TBB_EMSCRIPTEN_URL = "https://github.com/sdunkel/wasmtbb/archive/refs/heads/master.zip"
+    TBB_URL = "https://github.com/oneapi-src/oneTBB/archive/refs/tags/v2021.11.0.zip"
 
 def InstallTBB(context, force, buildArgs):
-    if context.emscripten:
-        InstallTBB_Emscripten(context, force, buildArgs)
-    elif Windows():
+    if Windows():
+        # broken
         InstallTBB_Windows(context, force, buildArgs)
     elif MacOS():
+        # broken
         InstallTBB_MacOS(context, force, buildArgs)
     else:
-        InstallTBB_Linux(context, force, buildArgs)
+        InstallTBB_OneTBB(context, force, buildArgs)
 
 def InstallTBB_Windows(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(TBB_URL, context, force, 
@@ -1047,59 +1044,32 @@ def InstallTBB_MacOS(context, force, buildArgs):
         CopyDirectory(context, "include/serial", "include/serial")
         CopyDirectory(context, "include/tbb", "include/tbb")
 
-def InstallTBB_Linux(context, force, buildArgs):
+def InstallTBB_OneTBB(context, force, buildArgs):
+
     with CurrentWorkingDirectory(DownloadURL(TBB_URL, context, force)):
-        # Append extra argument controlling libstdc++ ABI if specified.
-        AppendCXX11ABIArg("CXXFLAGS", context, buildArgs)
-
-        # TBB does not support out-of-source builds in a custom location.
-        Run('make -j{procs} {buildArgs}'
-            .format(procs=context.numJobs, 
-                    buildArgs=" ".join(buildArgs)))
-
         # Install both release and debug builds. USD requires the debug
         # libraries when building in debug mode, and installing both
         # makes it easier for users to install dependencies in some
         # location that can be shared by both release and debug USD
         # builds. Plus, the TBB build system builds both versions anyway.
-        CopyFiles(context, "build/*_release/libtbb*.*", "lib")
+        RunCMake(context, force, [
+            "-DTBB_STRICT=OFF",
+            "-DCMAKE_CXX_FLAGS=-Wno-unused-command-line-argument",
+            "-DTBB_DISABLE_HWLOC_AUTOMATIC_SEARCH=ON",
+            "-DBUILD_SHARED_LIBS=ON"
+        ] + buildArgs)
         
-        # Some platform/configuration combinations, such as mac/arm64
-        # cannot currently be built as debug. The try allows the build to
-        # proceed even when the debug build was not produced.
         try:
-            CopyFiles(context, "build/*_debug/libtbb*.*", "lib")
+            CopyFiles(context, "*_debug/libtbb*.*", "lib")
         except:
             PrintWarning("TBB debug libraries are not available on this platform.")
 
-        CopyDirectory(context, "include/serial", "include/serial")
-        CopyDirectory(context, "include/tbb", "include/tbb")
+        try:
+            CopyFiles(context, "*_release/libtbb*.*", "lib")
+        except:
+            PrintWarning("TBB release libraries are not available on this platform.")
 
-def InstallTBB_Emscripten(context, force, buildArgs):
-
-    with CurrentWorkingDirectory(DownloadURL(TBB_EMSCRIPTEN_URL, context, force)):
-        # By default no config for other platform is available, but the one for linux
-        # seems to work fine
-        if MacOS():
-            shutil.copy('build/linux.emscripten.inc', 'build/macos.emscripten.inc')
-        elif Windows():
-            shutil.copy('build/linux.emscripten.inc', 'build/windows.emscripten.inc')
-
-        # Run the script from the "x64 Native Tools Command Prompt" of Visual Studio,
-        # to get the correct compiler and arch for TBB Emscripten build on windows
-        Run('{emmake} make -j{procs} extra_inc=big_iron.inc tbb {buildArgs}'
-            .format(emmake="emmake.bat" if Windows() else "emmake",
-                    procs=context.numJobs,
-                    buildArgs=" ".join(buildArgs)))
-
-        # Install both release and debug builds. USD requires the debug
-        # libraries when building in debug mode, and installing both
-        # makes it easier for users to install dependencies in some
-        # location that can be shared by both release and debug USD
-        # builds. Plus, the TBB build system builds both versions anyway.
-        CopyFiles(context, "build/*_release/libtbb*.*", "lib")
-        CopyFiles(context, "build/*_debug/libtbb*.*", "lib")
-        CopyDirectory(context, "include/serial", "include/serial")
+        # CopyDirectory(context, "include/serial", "include/serial")
         CopyDirectory(context, "include/tbb", "include/tbb")
 
 TBB = Dependency("TBB", InstallTBB, "include/tbb/tbb.h")

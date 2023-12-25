@@ -801,21 +801,8 @@ private:
             TfAutoMallocTag tag("field data");
             auto &fieldValuePairs =
                 liveFieldSets[FieldSetIndex(fsBegin-fieldSets.begin())];
-                    
-            dispatcher.Run(
-                [this, fsBegin, fsEnd, &fields, &fieldValuePairs]() mutable {
-                    // XXX Won't need first two tags when bug #132031 is
-                    // addressed
-                    TfAutoMallocTag tag(
-                        "Usd", "Usd_CrateDataImpl::Open", "field data");
-                    auto &pairs = fieldValuePairs.GetMutable();
-                    pairs.resize(fsEnd-fsBegin);
-                    for (size_t i = 0; fsBegin != fsEnd; ++fsBegin, ++i) {
-                        auto const &field = fields[fsBegin->value];
-                        pairs[i].first = _crateFile->GetToken(field.tokenIndex);
-                        pairs[i].second = _UnpackForField(field.valueRep);
-                    }
-                });
+            TaskOpenFieldData task(this, _crateFile.get(), fsBegin, fsEnd, fields, fieldValuePairs);
+            dispatcher.Run(task);
         }
                 
         dispatcher.Wait();
@@ -1041,6 +1028,54 @@ private:
         
         Usd_Shared<_FieldValuePairVector> fields;
         SdfSpecType specType;
+    };
+
+    struct TaskOpenFieldData {
+        typedef std::pair<TfToken, VtValue> FieldValuePair;
+        typedef Usd_Shared<_FieldValuePairVector> SharedFieldValuePairVector;
+        TaskOpenFieldData(Usd_CrateDataImpl* owner, CrateFile* crateFile, vector<Usd_CrateFile::FieldIndex>::iterator begin, vector<Usd_CrateFile::FieldIndex>::iterator end,
+            vector<CrateFile::Field> &fields, SharedFieldValuePairVector &fieldValuePairs)
+            :m_owner(owner),
+            m_crateFile(crateFile),
+            m_begin(begin),
+            m_end(end),
+            m_fields(fields),
+            m_fieldValuePairs(fieldValuePairs)
+        {
+
+        }
+
+        void operator()() const {
+            try{
+                // XXX Won't need first two tags when bug #132031 is
+                // addressed
+                TfAutoMallocTag tag(
+                    "Usd", "Usd_CrateDataImpl::Open", "field data");
+                auto &pairs = m_fieldValuePairs.GetMutable();
+                 vector<Usd_CrateFile::FieldIndex>::const_iterator begin = m_begin;
+                pairs.resize(m_end-begin);
+                for (size_t i = 0; begin != m_end; ++begin, ++i) {
+                    auto const &field = m_fields[begin->value];
+                    pairs[i].first =
+                        m_crateFile->GetToken(field.tokenIndex);
+                    pairs[i].second = m_owner->_UnpackForField(field.valueRep);
+                }
+            } catch (const std::exception &e){
+                TF_RUNTIME_ERROR("Encountered exception: %s %s",
+                    e.what(), m_crateFile->GetAssetPath().c_str());
+
+            } catch (...) {
+                TF_RUNTIME_ERROR("Encountered unknown exception");
+            }
+        }
+
+    private:
+        Usd_CrateDataImpl *m_owner;
+        CrateFile         *m_crateFile;
+        vector<Usd_CrateFile::FieldIndex>::iterator m_begin;
+        vector<Usd_CrateFile::FieldIndex>::iterator m_end;
+        vector<CrateFile::Field>        m_fields;
+        SharedFieldValuePairVector      m_fieldValuePairs;
     };
 
     using _HashMap = pxr_tsl::robin_map<

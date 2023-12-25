@@ -29,7 +29,7 @@
 
 #include "pxr/base/tf/envSetting.h"
 
-#include <tbb/task_scheduler_init.h>
+#include <tbb/global_control.h>
 #include <tbb/task_arena.h>
 
 #include <algorithm>
@@ -58,16 +58,15 @@ TF_DEFINE_ENV_SETTING(
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-// We create a task_scheduler_init instance at static initialization time if
-// PXR_WORK_THREAD_LIMIT is set to a nonzero value.  Otherwise this stays NULL.
-static tbb::task_scheduler_init *_tbbTaskSchedInit;
+static unsigned kThreadLimit = 0;
+static tbb::global_control *_tbbGlobalControl;
 
 unsigned
 WorkGetPhysicalConcurrencyLimit()
 {
     // Use TBB here, since it pays attention to the affinity mask on Linux and
     // Windows.
-    return tbb::task_scheduler_init::default_num_threads();
+    return tbb::info::default_concurrency();
 }
 
 // This function always returns an actual thread count >= 1.
@@ -123,7 +122,8 @@ Work_InitializeThreading()
     // previously initialized by the hosting environment (e.g. if we are running
     // as a plugin to another application.)
     if (settingVal) {
-        _tbbTaskSchedInit = new tbb::task_scheduler_init(threadLimit);
+         _tbbGlobalControl = new tbb::global_control(tbb::global_control::max_allowed_parallelism, threadLimit);
+         kThreadLimit = threadLimit;
     }
 }
 static int _forceInitialization = (Work_InitializeThreading(), 0);
@@ -162,12 +162,12 @@ WorkSetConcurrencyLimit(unsigned n)
     // According to the documentation that should be the case, but we should
     // make sure.  If we do decide to delete it, we have to make sure to 
     // note that it has already been initialized.
-    if (_tbbTaskSchedInit) {
-        _tbbTaskSchedInit->terminate();
-        _tbbTaskSchedInit->initialize(threadLimit);
-    } else {
-        _tbbTaskSchedInit = new tbb::task_scheduler_init(threadLimit);
+    kThreadLimit = threadLimit;
+    if(_tbbGlobalControl)
+    {
+        delete _tbbGlobalControl;
     }
+    _tbbGlobalControl = new tbb::global_control(tbb::global_control::max_allowed_parallelism, threadLimit);
 }
 
 void 
@@ -185,7 +185,7 @@ WorkSetConcurrencyLimitArgument(int n)
 unsigned
 WorkGetConcurrencyLimit()
 {
-    return tbb::this_task_arena::max_concurrency();
+    return kThreadLimit > 0 ? kThreadLimit: tbb::global_control::active_value(tbb::global_control::max_allowed_parallelism);
 }
 
 bool
