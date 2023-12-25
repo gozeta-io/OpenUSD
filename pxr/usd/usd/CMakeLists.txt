@@ -72,12 +72,12 @@ pxr_library(usd
         variantSets
         zipFile
 
-    JS_CPPFILES
-        wrapAttributeJs.cpp
-        wrapPrimJs.cpp
-        wrapReferencesJs.cpp
-        wrapStageJs.cpp
-        emscriptenSdfToVtValue.cpp
+    # JS_CPPFILES
+    #     wrapAttributeJs.cpp
+    #     wrapPrimJs.cpp
+    #     wrapReferencesJs.cpp
+    #     wrapStageJs.cpp
+    #     emscriptenSdfToVtValue.cpp
 
     PYTHON_PUBLIC_CLASSES
         pyEditContext

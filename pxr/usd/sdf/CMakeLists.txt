@@ -169,15 +169,15 @@ pxr_library(sdf
         wrapVariantSpec.cpp
         wrapVariantSetSpec.cpp
 
-    JS_CPPFILES
-        wrapLayerJs.cpp
-        wrapSpecJs.cpp
-        wrapPrimSpecJs.cpp
-        wrapPropertySpecJs.cpp
-        wrapRelationshipSpecJs.cpp
-        wrapAttributeSpecJs.cpp
-        wrapTypesJs.cpp
-        wrapValueTypeNameJs.cpp
+    # JS_CPPFILES
+    #     wrapLayerJs.cpp
+    #     wrapSpecJs.cpp
+    #     wrapPrimSpecJs.cpp
+    #     wrapPropertySpecJs.cpp
+    #     wrapRelationshipSpecJs.cpp
+    #     wrapAttributeSpecJs.cpp
+    #     wrapTypesJs.cpp
+    #     wrapValueTypeNameJs.cpp
 
     PYMODULE_FILES 
         __init__.py
