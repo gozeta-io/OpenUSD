@@ -2579,7 +2579,8 @@ if context.buildMaterialX:
 if context.buildImaging:
     if context.emscripten:
         # In this case order is important since SHADERC will use the same common dependencies for SPIRV as TINT
-        requiredDependencies += [TINT, SHADERC]
+        # requiredDependencies += [TINT, SHADERC]
+        requiredDependencies += [SHADERC]
 
     if context.enablePtex:
         requiredDependencies += [PTEX]
