@@ -714,7 +714,7 @@ def InstallBoost_Helper(context, force, buildArgs):
     elif MacOS():
         BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.78.0/source/boost_1_78_0.zip"
     else:
-        BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.70.0/source/boost_1_70_0.zip"
+        BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.82.0/source/boost_1_82_0.zip"
 
     # Documentation files in the boost archive can have exceptionally
     # long paths. This can lead to errors when extracting boost on Windows,
@@ -941,7 +941,8 @@ elif MacOS():
     TBB_URL = "https://github.com/oneapi-src/oneTBB/archive/refs/tags/2019_U6.zip"
     TBB_INTEL_URL = "https://github.com/oneapi-src/oneTBB/archive/refs/tags/2018_U1.zip"
 else:
-    TBB_URL = "https://github.com/oneapi-src/oneTBB/archive/refs/tags/v2021.11.0.zip"
+    # Use the most recent TBB release so that it works for emscripten 3.1.45+
+    TBB_URL = "https://github.com/oneapi-src/oneTBB/archive/8c9814cfd45f9945251ce046b7d18e12a130b7b2.zip"
 
 def InstallTBB(context, force, buildArgs):
     if Windows():
@@ -1989,8 +1990,9 @@ def InstallUSD(context, force, buildArgs):
         extraArgs += buildArgs
 
         if context.emscripten:
-            if context.buildUsdImaging:
-                extraArgs.append('-DPXR_ENABLE_WEBGPU_SUPPORT=ON')
+            # if context.buildUsdImaging:
+            #     extraArgs.append('-DPXR_ENABLE_WEBGPU_SUPPORT=ON')
+            extraArgs.append('-DPXR_ENABLE_WEBGPU_SUPPORT=OFF')
 
             extraArgs.append('-DPXR_ENABLE_JS_SUPPORT=ON')
             # For some reason we have to manually specify path to boost
@@ -2013,8 +2015,8 @@ def InstallUSD(context, force, buildArgs):
             else:
                 extraArgs.append('-DPXR_EMSCRIPTEN_NODE=0')
 
-        if context.dawn:
-            extraArgs.append('-DPXR_ENABLE_WEBGPU_SUPPORT=ON')
+        # if context.dawn:
+        #     extraArgs.append('-DPXR_ENABLE_WEBGPU_SUPPORT=ON')
 
         RunCMake(context, force, extraArgs)
 
