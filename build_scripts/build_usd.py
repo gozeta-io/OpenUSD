@@ -1057,6 +1057,7 @@ def InstallTBB_OneTBB(context, force, buildArgs):
             "-DTBB_STRICT=OFF",
             "-DCMAKE_CXX_FLAGS=-Wno-unused-command-line-argument",
             "-DTBB_DISABLE_HWLOC_AUTOMATIC_SEARCH=ON",
+            "-DTBB_TEST=OFF",
             "-DBUILD_SHARED_LIBS=ON"
         ] + buildArgs)
         
