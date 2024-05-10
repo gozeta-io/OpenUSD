@@ -77,7 +77,9 @@ list(APPEND OIIO_INCLUDE_DIRS ${OIIO_INCLUDE_DIR})
 
 foreach(OIIO_LIB
     OpenImageIO
+    OpenImageIO_d
     OpenImageIO_Util
+    OpenImageIO_Util_d
     )
 
     find_library(OIIO_${OIIO_LIB}_LIBRARY
