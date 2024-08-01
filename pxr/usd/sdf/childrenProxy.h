@@ -69,12 +69,18 @@ private:
             return *_pos;
         }
 
+#if 0
+        // This operator seems to be never called, but it causes compilation failures:
+        // .../third_party/OpenUSD/pxr/usd/sdf/childrenProxy.h:75:21: error: no member named '_Set' in 'SdfChildrenProxy<_View>'
+        //   75 |             _owner->_Set(*_pos, x);
+        //      |             ~~~~~~  ^
         template <class U>
         _ValueProxy& operator=(const U& x)
         {
             _owner->_Set(*_pos, x);
             return *this;
         }
+#endif
 
         bool operator==(const mapped_type& other) const
         {
