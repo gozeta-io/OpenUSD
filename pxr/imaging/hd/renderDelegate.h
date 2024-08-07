@@ -523,7 +523,7 @@ public:
     virtual void Update();
 
     /// Whether or not multithreaded sync is enabled for the specified prim type.
-    bool IsParallelSyncEnabled(TfToken primType) const;
+    virtual bool IsParallelSyncEnabled(TfToken primType) const;
 
 protected:
     /// This class must be derived from.
