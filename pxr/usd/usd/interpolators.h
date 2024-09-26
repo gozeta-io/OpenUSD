@@ -150,6 +150,71 @@ private:
     T* _result;
 };
 
+inline bool SdfPath_IsRotation(const std::string &name)
+{
+    return name.find("xformOp:rotate") != std::string::npos;
+}
+
+template <typename T>
+inline typename std::enable_if<std::is_same<T, float>::value ||
+                               std::is_same<T, double>::value, T>::type
+Usd_LerpAngleImpl(double alpha, const T &a, const T &b)
+{
+    T delta = b - a;
+
+    // Adjust delta to be within [-180, 180]
+    if (delta > 180)
+        delta -= 360;
+    else if (delta < -180)
+        delta += 360;
+
+    T interpolated = a + static_cast<T>(alpha) * delta;
+
+    // Optionally normalize the result to [0, 360)
+    interpolated = std::fmod(interpolated, 360);
+    if (interpolated < 0)
+        interpolated += 360;
+
+    return interpolated;
+}
+
+template <typename T>
+inline T Usd_LerpAngle(double alpha, const T &lower, const T &upper)
+{
+    TF_CODING_ERROR("Usd_LerpAngle not implemented for type %s", TfType::Find<T>().GetTypeName().c_str());
+    return GfLerp(alpha, lower, upper);
+}
+
+template <>
+inline float Usd_LerpAngle(double alpha, const float& a, const float& b) {
+    return Usd_LerpAngleImpl(alpha, a, b);
+}
+
+template <>
+inline double Usd_LerpAngle(double alpha, const double& a, const double& b) {
+    return Usd_LerpAngleImpl(alpha, a, b);
+}
+
+template <>
+inline GfVec3f Usd_LerpAngle(double alpha, const GfVec3f &lower, const GfVec3f &upper)
+{
+    GfVec3f result;
+    result[0] = Usd_LerpAngleImpl(alpha, lower[0], upper[0]);
+    result[1] = Usd_LerpAngleImpl(alpha, lower[1], upper[1]);
+    result[2] = Usd_LerpAngleImpl(alpha, lower[2], upper[2]);
+    return result;
+}
+
+template <>
+inline GfVec3d Usd_LerpAngle(double alpha, const GfVec3d &lower, const GfVec3d &upper)
+{
+    GfVec3d result;
+    result[0] = Usd_LerpAngleImpl(alpha, lower[0], upper[0]);
+    result[1] = Usd_LerpAngleImpl(alpha, lower[1], upper[1]);
+    result[2] = Usd_LerpAngleImpl(alpha, lower[2], upper[2]);
+    return result;
+}
+
 template <class T>
 inline T
 Usd_Lerp(double alpha, const T &lower, const T &upper)
@@ -232,7 +297,14 @@ private:
         }
 
         const double parametricTime = (time - lower) / (upper - lower);
-        *_result = Usd_Lerp(parametricTime, lowerValue, upperValue);
+
+        if (path.IsPropertyPath() && SdfPath_IsRotation(path.GetName())) {
+            *_result = Usd_LerpAngle(parametricTime, lowerValue, upperValue);
+        }
+        else {
+            *_result = Usd_Lerp(parametricTime, lowerValue, upperValue);
+        }
+
         return true;
     }
 
