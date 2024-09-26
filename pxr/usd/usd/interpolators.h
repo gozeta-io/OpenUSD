@@ -163,6 +163,7 @@ Usd_LerpAngleImpl(double alpha, const T &a, const T &b)
     T delta = b - a;
 
     // Adjust delta to be within [-180, 180]
+    delta = std::fmod(delta, 360);
     if (delta > 180)
         delta -= 360;
     else if (delta < -180)
