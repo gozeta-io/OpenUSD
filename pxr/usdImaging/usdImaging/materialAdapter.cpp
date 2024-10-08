@@ -260,8 +260,11 @@ UsdImagingMaterialAdapter::ProcessPropertyChange(
     SdfPath const& cachePath,
     TfToken const& propertyName)
 {
-    if (propertyName == UsdGeomTokens->visibility) {
-        // Materials aren't affected by visibility
+    if (propertyName == UsdGeomTokens->visibility ||
+        propertyName == UsdGeomTokens->xformOpOrder ||
+        // Skip xformOp:transform, xformOp:translate, etc.
+        propertyName.GetString().compare(0, 7, "xformOp") == 0) {
+        // Materials aren't affected by visibility or transforms
         return HdChangeTracker::Clean;
     }
 
