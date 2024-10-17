@@ -763,33 +763,8 @@ BOOST_VERSION_FILES = [
 ]
 
 def InstallBoost_Helper(context, force, buildArgs):
-    # In general we use boost 1.76.0 to adhere to VFX Reference Platform CY2022.
-    # However, there are some cases where a newer version is required.
-    # - Building with Python 3.11 requires boost 1.82.0 or newer
-    #   (https://github.com/boostorg/python/commit/a218ba)
-    # - Building on MacOS requires v1.82.0 or later for C++17 support starting
-    #   with Xcode 15. We choose to use this version for all MacOS builds for
-    #   simplicity."
-    # - Building with Python 3.10 requires boost 1.76.0 or newer
-    #   (https://github.com/boostorg/python/commit/cbd2d9)
-    #   XXX: Due to a typo we've been using 1.78.0 in this case for a while.
-    #        We're leaving it that way to minimize potential disruption.
-    # - Building with Visual Studio 2022 requires boost 1.78.0 or newer.
-    #   (https://github.com/boostorg/build/issues/735)
-    # - Building on MacOS requires boost 1.78.0 or newer to resolve Python 3
-    #   compatibility issues on Big Sur and Monterey.
-    pyInfo = GetPythonInfo(context)
-    pyVer = (int(pyInfo[3].split('.')[0]), int(pyInfo[3].split('.')[1]))
-    if context.targetWasm:
-        BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.82.0/source/boost_1_82_0.zip"
-    elif MacOS() or (context.buildPython and pyVer >= (3,11)):
-        BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.82.0/source/boost_1_82_0.zip"
-    elif context.buildPython and pyVer >= (3, 10):
-        BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.78.0/source/boost_1_78_0.zip"
-    elif IsVisualStudio2022OrGreater():
-        BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.78.0/source/boost_1_78_0.zip"
-    else:
-        BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.76.0/source/boost_1_76_0.zip"
+    # Buidlding for Cloud Zeta, we always use 1.82.0 for WASM and Linux builds.
+    BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.82.0/source/boost_1_82_0.zip"
 
     # Documentation files in the boost archive can have exceptionally
     # long paths. This can lead to errors when extracting boost on Windows,
@@ -902,6 +877,7 @@ def InstallBoost_Helper(context, force, buildArgs):
             b2_settings.append("--with-date_time")
 
         if context.buildOIIO or context.enableOpenVDB:
+            b2_settings.append("--with-chrono")
             b2_settings.append("--with-system")
             b2_settings.append("--with-thread")
 
@@ -1392,7 +1368,7 @@ OPENVDB = Dependency("OpenVDB", InstallOpenVDB, "include/openvdb/openvdb.h")
 ############################################################
 # OpenImageIO
 
-OIIO_URL = "https://github.com/OpenImageIO/oiio/archive/refs/tags/v2.3.21.0.zip"
+OIIO_URL = "https://github.com/OpenImageIO/oiio/archive/refs/tags/v2.5.16.0.zip"
 
 
 def InstallOpenImageIO(context, force, buildArgs):
