@@ -148,13 +148,31 @@ public:
     typedef HdInstance<VALUE> InstanceType;
 
     HdInstanceRegistry() = default;
-    
+
     /// Copy constructor.  Need as HdInstanceRegistry is placed in a map
     /// and mutex is not copy constructable, so can't use default
     HdInstanceRegistry(const HdInstanceRegistry &other)
         : _dictionary(other._dictionary)
         , _registryMutex()  // mutex is not copied
     { }
+
+    HdInstanceRegistry& operator =(HdInstanceRegistry const &other)
+    {
+        if (this != &other) {
+            _dictionary = other._dictionary;
+            // mutex is not copied
+        }
+        return *this;
+    }
+
+    HdInstanceRegistry& operator =(HdInstanceRegistry &&other)
+    {
+        if (this != &other) {
+            _dictionary = std::move(other._dictionary);
+            // mutex is not moved
+        }
+        return *this;
+    }
 
     /// Returns a shared instance for given key.
     InstanceType GetInstance(
@@ -174,9 +192,9 @@ public:
 
     /// Removes unreferenced entries and returns the count
     /// of remaining entries. If an entry is to be removed, callback function
-    /// "callback" will be called on the entry before removal. When 
-    /// recycleCount is greater than zero, unreferenced entries will not be 
-    /// removed until GarbageCollect() is called that many more times, i.e. 
+    /// "callback" will be called on the entry before removal. When
+    /// recycleCount is greater than zero, unreferenced entries will not be
+    /// removed until GarbageCollect() is called that many more times, i.e.
     /// allowing unreferenced entries to be recycled if they are needed again.
     template <typename Callback>
     size_t GarbageCollect(Callback &&callback, int recycleCount = 0);
@@ -199,8 +217,6 @@ private:
 
     typename InstanceType::Dictionary _dictionary;
     typename InstanceType::RegistryMutex _registryMutex;
-
-    HdInstanceRegistry &operator =(HdInstanceRegistry &) = delete;
 };
 
 // ---------------------------------------------------------------------------
