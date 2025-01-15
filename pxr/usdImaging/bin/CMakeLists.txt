@@ -13,5 +13,6 @@ if (${PXR_ENABLE_MATERIALX_SUPPORT})
 endif()
 
 if (${PXR_ENABLE_WEBGPU_SUPPORT} AND EMSCRIPTEN)
-    add_subdirectory(usdviewweb)
+    # usdviewweb fails to build, and CloudZeta doesn't need it.
+    #add_subdirectory(usdviewweb)
 endif()
